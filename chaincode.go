@@ -296,7 +296,7 @@ func (t *SimpleChaincode) create_project(stub *shim.ChaincodeStub, args []string
 	name := args[0]
 
 	//check if marble already exists
-	projectAsBytes, err := stub.GetState(name)
+	projectAsBytes, err := stub.GetState(strings.Replace(name, " ", "", -1))
 	if err != nil {
 		fmt.Println("Failed to get project name")
 		return nil, errors.New("Failed to get project name")
@@ -312,7 +312,7 @@ func (t *SimpleChaincode) create_project(stub *shim.ChaincodeStub, args []string
 	res.Name = name
 	
 	jsonAsBytes, _ := json.Marshal(res)
-	err = stub.PutState(name, jsonAsBytes)
+	err = stub.PutState(strings.Replace(name, " ", "", -1), jsonAsBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +326,7 @@ func (t *SimpleChaincode) create_project(stub *shim.ChaincodeStub, args []string
 	json.Unmarshal(projectAsBytes, &projectIndex)							//un stringify it aka JSON.parse()
 	
 	//append
-	projectIndex = append(projectIndex, name)									//add marble name to index list
+	projectIndex = append(projectIndex, strings.Replace(name, " ", "", -1))									//add marble name to index list
 	fmt.Println("! project index: ", projectIndex)
 	jsonAsBytes, _ = json.Marshal(projectIndex)
 	err = stub.PutState(projectIndexStr, jsonAsBytes)						//store name of marble
