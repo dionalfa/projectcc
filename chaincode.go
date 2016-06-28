@@ -142,6 +142,8 @@ func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args
 		return t.remove_trade(stub, args)
 	} else if function == "create_project" {
 		return t.create_project(stub, args)
+	} else if function == "add_project_member" {
+		return t.add_project_member(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function)					//error
 
