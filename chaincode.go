@@ -152,6 +152,8 @@ func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args
 		return t.create_project(stub, args)
 	} else if function == "add_project_member"{
 		return t.add_project_member(stub, args)
+	} else if function == "delete_project_member"{
+		return t.delete_project_member(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function)					//error
 
@@ -394,6 +396,48 @@ func (t *SimpleChaincode) add_project_member(stub *shim.ChaincodeStub, args []st
 	}
 	
 	fmt.Println("- end add new member")
+	return nil, nil
+}
+
+// ===========================================================================================================================
+// Delete project member
+// ===========================================================================================================================
+func (t *SimpleChaincode) delete_project_member(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
+	//   0                  1
+	// "project name", "member id"
+	if len(args) != 2 {
+		fmt.Println("Incorrect number of arguments. Expecting 2")
+		return nil, errors.New("Incorrect number of arguments. Expecting 2")
+	}
+	
+	//get project from chaincode state
+	projectAsBytes, err := stub.GetState(args[0]);
+
+	if err != nil{
+		fmt.Println("Failed to get project")
+		return nil, errors.New("Failed to get project")
+	}
+
+	project := Project{}
+	json.Unmarshal(projectAsBytes, &project)
+	
+	//remove member from project
+	for i := range project.Members{
+		//looking for member ID
+		if project.Members[i] == args[1]{
+			fmt.Println("member found")
+			project.Members = append(project.Members[:i], project.Members[i+1:]...)			//remove it
+			break
+		}
+	}
+
+	projectAsBytes, _ = json.Marshal(project)									//save new index
+	err = stub.PutState(args[0], projectAsBytes)
+
+	if err != nil {
+		return nil, errors.New("Failed to delete member from project chaincode state")
+	}
+
 	return nil, nil
 }
 
