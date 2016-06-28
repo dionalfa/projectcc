@@ -20,14 +20,14 @@ var openTradesStr = "_opentrades"				//name for the key/value that will store al
 
 var projectIndexStr = "_projectindex"
 
-type Project struct{
-	Name string `json:"name"`
-    Members []Member `json:"members"`
-}
-
 type Member struct{
 	MemberID string `json:"memberid"`
 	MemberName string `json:"membername"`
+}
+
+type Project struct{
+	Name string `json:"name"`
+    Members []Member `json:"members"`
 }
 
 type Marble struct{
