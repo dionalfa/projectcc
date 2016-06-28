@@ -438,7 +438,7 @@ func (t *SimpleChaincode) add_project_member(stub *shim.ChaincodeStub, args []st
 		}
 
 		for j:= range project.Members{
-			if args[i] == project.Members[j].MemberID {
+			if args[i] != project.Members[j].MemberID {
 				member = Member{}
 				member.MemberID = args[i]
 				member.MemberName =  args[i+1]
