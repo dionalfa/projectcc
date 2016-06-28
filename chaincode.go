@@ -19,10 +19,16 @@ var marbleIndexStr = "_marbleindex"				//name for the key/value that will store 
 var openTradesStr = "_opentrades"				//name for the key/value that will store all open trades
 
 var projectIndexStr = "_projectindex"
+var employeeIndexStr = "_employeeindex"
 
+
+//same as employee
 type Member struct{
 	MemberID string `json:"memberid"`
 	MemberName string `json:"membername"`
+    JobTitle string `json:"jobtitle"`
+    Level int `json:"level"`
+    JobGroup string `json:"jobgroup"`
 }
 
 type Project struct{
@@ -140,11 +146,9 @@ func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args
 		return res, err
 	} else if function == "remove_trade" {									//cancel an open trade order
 		return t.remove_trade(stub, args)
-	} else if function == "create_project" {
-		return t.create_project(stub, args)
-	} else if function == "add_project_member" {
-		return t.add_project_member(stub, args)
-	}
+	} else if function == "add_employee"{
+        return t.add_employee(stub, args)
+    }
 	fmt.Println("invoke did not find func: " + function)					//error
 
 	return nil, errors.New("Received unknown function invocation")
@@ -186,9 +190,93 @@ func (t *SimpleChaincode) read(stub *shim.ChaincodeStub, args []string) ([]byte,
 	return valAsbytes, nil													//send it onward
 }
 
+// ===========================================================================================================================
+// Add new employee
+// ===========================================================================================================================
+func (t *SimpleChaincode) add_employee(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
+	var err error
+
+	//   0       1       2           3          4
+	// "id", "name", "job title", "level", "job group"
+	if len(args) != 5 {
+        fmt.Println("Incorrect number of arguments. Expecting 5")
+		return nil, errors.New("Incorrect number of arguments. Expecting 5")
+	}
+
+	//input sanitation
+	fmt.Println("- start add new employee")
+	if len(args[0]) <= 0 {
+		return nil, errors.New("1st argument must be a non-empty string")
+	}
+	if len(args[1]) <= 0 {
+		return nil, errors.New("2nd argument must be a non-empty string")
+	}
+	if len(args[2]) <= 0 {
+		return nil, errors.New("3rd argument must be a non-empty string")
+	}
+	if len(args[3]) <= 0 {
+		return nil, errors.New("4th argument must be a non-empty string")
+	}
+    if len(args[4]) <= 0 {
+		return nil, errors.New("5th argument must be a non-empty string")
+	}
+
+	if err != nil {
+        fmt.Println("4th argument must be a numeric string")
+		return nil, errors.New("4th argument must be a numeric string")
+	}
+
+	//check if employee already exists
+	employeeAsBytes, err := stub.GetState(args[0])
+	if err != nil {
+        fmt.Println("Failed to get employee")
+		return nil, errors.New("Failed to get employee")
+	}
+
+	employee := Member{}
+	json.Unmarshal(employeeAsBytes, &employee)
+	if employee.MemberID == args[0] {
+		fmt.Println("This employee arleady exists: " + args[0])
+		fmt.Println(employee);
+		return nil, errors.New("This employee arleady exists")				//all stop a marble by this name exists
+	}
+	
+    employee.MemberID = args[0]
+    employee.MemberName = args[1]
+    employee.JobTitle = args[2]
+    employee.Level = args[3]
+    employee.JobGroup = args[4]
+
+    employeeAsBytes = json.Marshal(employee)
+
+	err = stub.PutState(args[0], employeeAsBytes)
+	if err != nil {
+		return nil, err
+	}
+		
+	//get the marble index
+	employeeIndexAsBytes, err := stub.GetState(employeeIndexStr)
+	if err != nil {
+		return nil, errors.New("Failed to get marble index")
+	}
+
+	var employeeIndex []string
+	json.Unmarshal(employeeIndexAsBytes, &employeeIndex)							//un stringify it aka JSON.parse()
+	
+	//append
+	employeeIndex = append(employeeIndex, args[0])									//add marble name to index list
+	fmt.Println("! employee index: ", employeeIndex)
+	jsonAsBytes, _ := json.Marshal(employeeIndex)
+	err = stub.PutState(marbleIndexStr, jsonAsBytes)						//store name of marble
+
+	fmt.Println("- end add employee")
+	return nil, nil
+}
+
 // ============================================================================================================================
 // Delete - remove a key/value pair from state
 // ============================================================================================================================
+
 func (t *SimpleChaincode) Delete(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
 	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
@@ -318,63 +406,6 @@ func (t *SimpleChaincode) init_marble(stub *shim.ChaincodeStub, args []string) (
 	return nil, nil
 }
 
-func (t *SimpleChaincode) create_project(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
-	var err error
-
-	if len(args) != 1 {
-		fmt.Println("Incorrect number of arguments. Expecting 1")
-		return nil, errors.New("Incorrect number of arguments. Expecting 4")
-	}
-
-	//input sanitation
-	fmt.Println("- start create project")
-	if len(args[0]) <= 0 {
-		fmt.Println("1st argument must be a non-empty string")
-		return nil, errors.New("1st argument must be a non-empty string")
-	}
-
-	name := args[0]
-
-	//check if marble already exists
-	projectAsBytes, err := stub.GetState(name)
-	if err != nil {
-		fmt.Println("Failed to get project name")
-		return nil, errors.New("Failed to get marble name")
-	}
-
-	res := Project{}
-	json.Unmarshal(projectAsBytes, &res)
-	if res.Name == name{
-		fmt.Println("This project arleady exists: " + name)
-		fmt.Println(res);
-		return nil, errors.New("This project arleady exists")				//all stop a marble by this name exists
-	}
-	res.Name = name
-	
-	jsonAsBytes, _ := json.Marshal(res)
-	err = stub.PutState(name, jsonAsBytes)
-	if err != nil {
-		return nil, err
-	}
-		
-	//get the marble index
-	projectAsBytes, err = stub.GetState(projectIndexStr)
-	if err != nil {
-		return nil, errors.New("Failed to get project index")
-	}
-	var projectIndex []string
-	json.Unmarshal(projectAsBytes, &projectIndex)							//un stringify it aka JSON.parse()
-	
-	//append
-	projectIndex = append(projectIndex, name)									//add marble name to index list
-	fmt.Println("! project index: ", projectIndex)
-	jsonAsBytes, _ = json.Marshal(projectIndex)
-	err = stub.PutState(projectIndexStr, jsonAsBytes)						//store name of marble
-
-	fmt.Println("- end create project")
-	return nil, nil
-}
-
 // ============================================================================================================================
 // Set User Permission on Marble
 // ============================================================================================================================
@@ -404,68 +435,6 @@ func (t *SimpleChaincode) set_user(stub *shim.ChaincodeStub, args []string) ([]b
 	}
 	
 	fmt.Println("- end set user")
-	return nil, nil
-}
-
-func (t *SimpleChaincode) add_project_member(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
-	var err error
-	var member Member
-	var isExists int //0 is not exists 1 is exists
-
-	//   0              1            2
-	//projectName   "memberID", "memberName"
-	if len(args) < 3 {
-		fmt.Println("Incorrect number of arguments. Expecting 3 or more")
-		return nil, errors.New("Incorrect number of arguments. Expecting 3 or more")
-	}
-	
-	fmt.Println("- start add project member")
-	fmt.Println(args[0] + " - " + args[1])
-
-
-	projectAsBytes, err := stub.GetState(args[0])
-	project := Project{}
-	json.Unmarshal(projectAsBytes, &project);
-
-	for i:=1; i < len(args); i++ {
-		isExists = 0
-
-		if len(project.Members) == 0 {
-			member = Member{}
-			member.MemberID = args[i]
-			member.MemberName =  args[i+1]
-
-			project.Members = append(project.Members, member)
-			fmt.Println("! Success add new member: " + args[i+1])
-		}
-
-		for j:= range project.Members{
-			if args[i] == project.Members[j].MemberID {
-				isExists = 1
-				break
-			}
-		}
-
-		if isExists == 0 {
-			member = Member{}
-			member.MemberID = args[i]
-			member.MemberName =  args[i+1]
-
-			project.Members = append(project.Members, member)
-			fmt.Println("! Success add new member: " + args[i+1])
-		}
-
-		i++;
-	}
-
-	jsonAsBytes, _ := json.Marshal(project)
-	err = stub.PutState(args[0], jsonAsBytes)
-
-	if err != nil {
-		return nil, err
-	}
-	
-	fmt.Println("- end add new member")
 	return nil, nil
 }
 
