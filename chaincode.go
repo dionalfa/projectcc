@@ -429,7 +429,7 @@ func (t *SimpleChaincode) add_project_member(stub *shim.ChaincodeStub, args []st
 
 	for i:=1; i < len(args); i++ {
 		isExists = 0
-		
+
 		if len(project.Members) == 0 {
 			member = Member{}
 			member.MemberID = args[i]
@@ -446,7 +446,7 @@ func (t *SimpleChaincode) add_project_member(stub *shim.ChaincodeStub, args []st
 			}
 		}
 
-		if(isExists == 0){
+		if isExists == 0 {
 			member = Member{}
 			member.MemberID = args[i]
 			member.MemberName =  args[i+1]
