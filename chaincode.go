@@ -33,7 +33,7 @@ type Member struct{
 
 type Project struct{
 	Name string `json:"name"`
-    Members []Member `json:"members"`
+    Members []string `json:"members"`
 }
 
 type Marble struct{
@@ -150,6 +150,8 @@ func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args
         return t.add_employee(stub, args)
     } else if function == "create_project"{
 		return t.create_project(stub, args)
+	} else if function == "add_project_member"{
+		return t.add_project_member(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function)					//error
 
@@ -332,6 +334,66 @@ func (t *SimpleChaincode) create_project(stub *shim.ChaincodeStub, args []string
 	err = stub.PutState(projectIndexStr, jsonAsBytes)						//store name of marble
 
 	fmt.Println("- end create project")
+	return nil, nil
+}
+
+// ===========================================================================================================================
+// Add project member
+// ===========================================================================================================================
+func (t *SimpleChaincode) add_project_member(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
+	var err error
+	var isExists int //0 is not exists 1 is exists
+
+	//   0              1            2      ..........
+	//projectName   "memberID"  "memberID"  ..........
+	if len(args) < 2 {
+		fmt.Println("Incorrect number of arguments. Expecting 2 or more")
+		return nil, errors.New("Incorrect number of arguments. Expecting 2 or more")
+	}
+	
+	fmt.Println("- start add project member")
+	fmt.Println(args[0] + " - " + args[1])
+
+	//Get project from chaincode state
+	projectAsBytes, err := stub.GetState(args[0])
+
+	if err != nil{
+		fmt.Println("Failed to get project")
+		return nil, errors.New("Failed to get project")
+	}
+
+	project := Project{}
+	json.Unmarshal(projectAsBytes, &project);
+
+	for i:=1; i < len(args); i++ {
+		isExists = 0 //0 means member still not in this project
+
+		if len(project.Members) == 0 {
+			project.Members = append(project.Members, args[i])
+			fmt.Println("! Success add new member: " + args[i])
+		}
+
+		for j:= range project.Members{
+			if args[i] == project.Members[j] {
+				isExists = 1 //1 means member already exists in this project
+				break
+			}
+		}
+
+		if isExists == 0 {
+			project.Members = append(project.Members, args[i])
+			fmt.Println("! Success add new member: " + args[i])
+		}
+	}
+
+	jsonAsBytes, _ := json.Marshal(project)
+	err = stub.PutState(args[0], jsonAsBytes)
+
+	if err != nil {
+		return nil, err
+	}
+	
+	fmt.Println("- end add new member")
 	return nil, nil
 }
 
