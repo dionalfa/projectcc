@@ -426,7 +426,7 @@ func (t *SimpleChaincode) add_project_member(stub *shim.ChaincodeStub, args []st
 	project := Project{}
 	json.Unmarshal(projectAsBytes, &project);
 
-	for i:=3; i < len(args); i++ {
+	for i:=1; i < len(args); i++ {
 
 		if(len(project.Members) == 0){
 			member = Member{}
