@@ -26,8 +26,8 @@ type Project struct{
 }
 
 type Member struct{
-	memberID string `json:"memberid"`
-	memberName string `json:"membername"`
+	MemberID string `json:"memberid"`
+	MemberName string `json:"membername"`
 }
 
 type Marble struct{
@@ -402,6 +402,53 @@ func (t *SimpleChaincode) set_user(stub *shim.ChaincodeStub, args []string) ([]b
 	}
 	
 	fmt.Println("- end set user")
+	return nil, nil
+}
+
+func (t *SimpleChaincode) add_project_member(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
+	var err error
+	var member Member
+
+	//   0              1            2
+	//projectName   "memberID", "memberName"
+	if len(args) < 3 {
+		fmt.Println("Incorrect number of arguments. Expecting 3 or more")
+		return nil, errors.New("Incorrect number of arguments. Expecting 3 or more")
+	}
+	
+	fmt.Println("- start add project member")
+	fmt.Println(args[0] + " - " + args[1])
+
+
+	projectAsBytes, err := stub.GetState(args[0])
+	project := Project{}
+	json.Unmarshal(projectAsBytes, &project);
+
+	for i:=3; i < len(args); i++ {
+
+		for j:= range project.Members{
+			if args[i] == project.Members[j].MemberID {
+				member = Member{}
+				member.MemberID = args[i]
+				member.MemberName =  args[i+1]
+
+				project.Members = append(project.Members, member)
+				fmt.Println("! Success add new member: " + args[i+1])
+				break
+			}
+		}
+
+		i++;
+	}
+
+	jsonAsBytes, _ := json.Marshal(project)
+	err = stub.PutState(args[0], jsonAsBytes)
+
+	if err != nil {
+		return nil, err
+	}
+	
+	fmt.Println("- end add new member")
 	return nil, nil
 }
 
