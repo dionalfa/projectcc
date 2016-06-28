@@ -267,7 +267,7 @@ func (t *SimpleChaincode) add_employee(stub *shim.ChaincodeStub, args []string) 
 	employeeIndex = append(employeeIndex, args[0])									//add marble name to index list
 	fmt.Println("! employee index: ", employeeIndex)
 	jsonAsBytes, _ := json.Marshal(employeeIndex)
-	err = stub.PutState(marbleIndexStr, jsonAsBytes)						//store name of marble
+	err = stub.PutState(employeeIndexStr, jsonAsBytes)						//store name of marble
 
 	fmt.Println("- end add employee")
 	return nil, nil
