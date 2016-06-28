@@ -148,7 +148,9 @@ func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args
 		return t.remove_trade(stub, args)
 	} else if function == "add_employee"{
         return t.add_employee(stub, args)
-    }
+    } else if function == "create_project"{
+		return t.create_project(stub, args)
+	}
 	fmt.Println("invoke did not find func: " + function)					//error
 
 	return nil, errors.New("Received unknown function invocation")
@@ -270,6 +272,66 @@ func (t *SimpleChaincode) add_employee(stub *shim.ChaincodeStub, args []string) 
 	err = stub.PutState(employeeIndexStr, jsonAsBytes)						//store name of marble
 
 	fmt.Println("- end add employee")
+	return nil, nil
+}
+
+// ===========================================================================================================================
+// Create Project
+// ===========================================================================================================================
+func (t *SimpleChaincode) create_project(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
+	var err error
+
+	if len(args) != 1 {
+		fmt.Println("Incorrect number of arguments. Expecting 1")
+		return nil, errors.New("Incorrect number of arguments. Expecting 4")
+	}
+
+	//input sanitation
+	fmt.Println("- start create project")
+	if len(args[0]) <= 0 {
+		fmt.Println("1st argument must be a non-empty string")
+		return nil, errors.New("1st argument must be a non-empty string")
+	}
+
+	name := args[0]
+
+	//check if marble already exists
+	projectAsBytes, err := stub.GetState(name)
+	if err != nil {
+		fmt.Println("Failed to get project name")
+		return nil, errors.New("Failed to get project name")
+	}
+
+	res := Project{}
+	json.Unmarshal(projectAsBytes, &res)
+	if res.Name == name{
+		fmt.Println("This project arleady exists: " + name)
+		fmt.Println(res);
+		return nil, errors.New("This project arleady exists")				//all stop a marble by this name exists
+	}
+	res.Name = name
+	
+	jsonAsBytes, _ := json.Marshal(res)
+	err = stub.PutState(name, jsonAsBytes)
+	if err != nil {
+		return nil, err
+	}
+		
+	//get the marble index
+	projectAsBytes, err = stub.GetState(projectIndexStr)
+	if err != nil {
+		return nil, errors.New("Failed to get project index")
+	}
+	var projectIndex []string
+	json.Unmarshal(projectAsBytes, &projectIndex)							//un stringify it aka JSON.parse()
+	
+	//append
+	projectIndex = append(projectIndex, name)									//add marble name to index list
+	fmt.Println("! project index: ", projectIndex)
+	jsonAsBytes, _ = json.Marshal(projectIndex)
+	err = stub.PutState(projectIndexStr, jsonAsBytes)						//store name of marble
+
+	fmt.Println("- end create project")
 	return nil, nil
 }
 
