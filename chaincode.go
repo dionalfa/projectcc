@@ -410,6 +410,7 @@ func (t *SimpleChaincode) set_user(stub *shim.ChaincodeStub, args []string) ([]b
 func (t *SimpleChaincode) add_project_member(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
 	var err error
 	var member Member
+	var isExists int //0 is not exists 1 is exists
 
 	//   0              1            2
 	//projectName   "memberID", "memberName"
@@ -438,15 +439,19 @@ func (t *SimpleChaincode) add_project_member(stub *shim.ChaincodeStub, args []st
 		}
 
 		for j:= range project.Members{
-			if args[i] != project.Members[j].MemberID {
-				member = Member{}
-				member.MemberID = args[i]
-				member.MemberName =  args[i+1]
-
-				project.Members = append(project.Members, member)
-				fmt.Println("! Success add new member: " + args[i+1])
+			if args[i] == project.Members[j].MemberID {
+				isExists = 1
 				break
 			}
+		}
+
+		if(isExists == 0){
+			member = Member{}
+			member.MemberID = args[i]
+			member.MemberName =  args[i+1]
+
+			project.Members = append(project.Members, member)
+			fmt.Println("! Success add new member: " + args[i+1])
 		}
 
 		i++;
