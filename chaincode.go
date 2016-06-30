@@ -270,7 +270,7 @@ func (t *SimpleChaincode) add_employee(stub *shim.ChaincodeStub, args []string) 
 // ===========================================================================================================================
 // Update employee
 // ===========================================================================================================================
-func (t *SimpleChaincode) add_employee(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
+func (t *SimpleChaincode) update_employee(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
 	var err error
 
 	//   0       1       2           3          4
@@ -326,8 +326,6 @@ func (t *SimpleChaincode) add_employee(stub *shim.ChaincodeStub, args []string) 
 		return nil, err
 	}
 		
-	//get the employee index
-	employeeIndexAsBytes, err := stub.GetState(employeeIndexStr)
 	if err != nil {
 		return nil, errors.New("Failed to get employee index")
 	}
