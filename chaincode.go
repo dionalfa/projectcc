@@ -92,20 +92,6 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 		return nil, err
 	}
 	
-	var empty []string
-	jsonAsBytes, _ := json.Marshal(empty)								//marshal an emtpy array of strings to clear the index
-	err = stub.PutState(marbleIndexStr, jsonAsBytes)
-	if err != nil {
-		return nil, err
-	}
-	
-	var trades AllTrades
-	jsonAsBytes, _ = json.Marshal(trades)								//clear the open trade struct
-	err = stub.PutState(openTradesStr, jsonAsBytes)
-	if err != nil {
-		return nil, err
-	}
-	
 	return nil, nil
 }
 
@@ -148,7 +134,9 @@ func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args
 		return t.remove_trade(stub, args)
 	} else if function == "add_employee"{
         return t.add_employee(stub, args)
-    } else if function == "create_project"{
+    } else if function == "update_employee" {
+		return t.update_employee(stub, args)
+	} else if function == "create_project"{
 		return t.create_project(stub, args)
 	} else if function == "add_project_member"{
 		return t.add_project_member(stub, args)
@@ -276,6 +264,75 @@ func (t *SimpleChaincode) add_employee(stub *shim.ChaincodeStub, args []string) 
 	err = stub.PutState(employeeIndexStr, jsonAsBytes)						//store name of marble
 
 	fmt.Println("- end add employee")
+	return nil, nil
+}
+
+// ===========================================================================================================================
+// Update employee
+// ===========================================================================================================================
+func (t *SimpleChaincode) add_employee(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
+	var err error
+
+	//   0       1       2           3          4
+	// "id", "name", "job title", "level", "job group"
+	if len(args) != 5 {
+        fmt.Println("Incorrect number of arguments. Expecting 5")
+		return nil, errors.New("Incorrect number of arguments. Expecting 5")
+	}
+
+	//input sanitation
+	fmt.Println("- start update employee")
+	if len(args[0]) <= 0 {
+		return nil, errors.New("1st argument must be a non-empty string")
+	}
+	if len(args[1]) <= 0 {
+		return nil, errors.New("2nd argument must be a non-empty string")
+	}
+	if len(args[2]) <= 0 {
+		return nil, errors.New("3rd argument must be a non-empty string")
+	}
+	if len(args[3]) <= 0 {
+		return nil, errors.New("4th argument must be a non-empty string")
+	}
+    if len(args[4]) <= 0 {
+		return nil, errors.New("5th argument must be a non-empty string")
+	}
+
+	//check if employee is exists
+	employeeAsBytes, err := stub.GetState(args[0])
+	if err != nil {
+        fmt.Println("Failed to get employee")
+		return nil, errors.New("Failed to get employee")
+	}
+
+	employee := Member{}
+	json.Unmarshal(employeeAsBytes, &employee)
+	
+    employee.MemberID = args[0]
+    employee.MemberName = args[1]
+    employee.JobTitle = args[2]
+    employee.Level, err = strconv.Atoi(args[3])
+
+    if err != nil {
+        return nil, errors.New("Level must be numeric")
+    }
+
+    employee.JobGroup = args[4]
+
+    employeeAsBytes, _ = json.Marshal(employee)
+
+	err = stub.PutState(args[0], employeeAsBytes) //rewrite the employee
+	if err != nil {
+		return nil, err
+	}
+		
+	//get the employee index
+	employeeIndexAsBytes, err := stub.GetState(employeeIndexStr)
+	if err != nil {
+		return nil, errors.New("Failed to get employee index")
+	}
+
+	fmt.Println("- end update")
 	return nil, nil
 }
 
