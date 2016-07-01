@@ -312,7 +312,7 @@ func (t *SimpleChaincode) create_project(stub *shim.ChaincodeStub, args []string
 	name := args[0] //of course can contain white space :D, beacuse it's name and will be stored as a value not a key
 
 	//Get project details from chaincode state
-	projectAsBytes, err := stub.GetState(strings.Replace(name, " ", "", -1))	//String replace is used for get rid of white space, because key can contain white space
+	projectAsBytes, err := stub.GetState(strings.Replace(name, " ", "_", -1))	//String replace is used for get rid of white space, because key can contain white space
 	if err != nil {
 		fmt.Println("Failed to get project name")
 		return nil, errors.New("Failed to get project name")
@@ -332,7 +332,7 @@ func (t *SimpleChaincode) create_project(stub *shim.ChaincodeStub, args []string
 	
 	jsonAsBytes, _ := json.Marshal(res)
 	//write project to the chaincode state
-	err = stub.PutState(strings.Replace(name, " ", "", -1), jsonAsBytes)	//String replace is used for get rid of white space, because key can contain white space
+	err = stub.PutState(strings.Replace(name, " ", "_", -1), jsonAsBytes)	//String replace is used for get rid of white space, because key can contain white space
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +347,7 @@ func (t *SimpleChaincode) create_project(stub *shim.ChaincodeStub, args []string
 	json.Unmarshal(projectAsBytes, &projectIndex)							//un stringify it aka JSON.parse()
 	
 	//append
-	projectIndex = append(projectIndex, strings.Replace(name, " ", "", -1))	//add project name to index list, but before it remove the white space first. Remember key can't contain white space
+	projectIndex = append(projectIndex, strings.Replace(name, " ", "_", -1))	//add project name to index list, but before it remove the white space first. Remember key can't contain white space
 	fmt.Println("! project index: ", projectIndex)
 	jsonAsBytes, _ = json.Marshal(projectIndex)
 	err = stub.PutState(projectIndexStr, jsonAsBytes)						//rewrite project index
